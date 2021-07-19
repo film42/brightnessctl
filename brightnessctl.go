@@ -2,12 +2,12 @@ package main
 
 import (
 	"flag"
-	"os"
+	"fmt"
 	"io/ioutil"
+	"math"
+	"os"
 	"strconv"
 	"strings"
-	"math"
-	"fmt"
 )
 
 func readInt(device string) int {
@@ -55,7 +55,7 @@ func changeDeviceByN(device string, n int) {
 	newBrightness = math.Max(newBrightness, 0)
 	newBrightness = math.Min(newBrightness, float64(maxBrightness))
 
-	writeInt(device + "/brightness", int(newBrightness))
+	writeInt(device+"/brightness", int(newBrightness))
 }
 
 func main() {
@@ -63,7 +63,7 @@ func main() {
 	amountPtr := flag.Int("amount", 5, "Increate or decreate by this percentage. Ex: 5 or -5.")
 	flag.Parse()
 
-	switch(*devicePtr) {
+	switch *devicePtr {
 	case "":
 		fmt.Println("No device specified:")
 		flag.PrintDefaults()
@@ -72,7 +72,12 @@ func main() {
 	case "display":
 		changeDeviceByN("/sys/class/backlight/gmux_backlight/", *amountPtr)
 	default:
-		fmt.Println("Unknown device:", *devicePtr)
-		os.Exit(1)
+		devicePath := fmt.Sprint("/sys/class/", *devicePtr, "/")
+		if _, err := os.Stat(devicePath); os.IsNotExist(err) {
+			fmt.Println("Missing device for path:", devicePath)
+			os.Exit(1)
+		}
+
+		changeDeviceByN(devicePath, *amountPtr)
 	}
 }
